@@ -1,71 +1,114 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sensor Readings</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 20px;
-        }
-        h1 {
-            color: #333;
-        }
-        #sensorReadings {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 20px;
-        }
-        .sensor {
-            border: 1px solid #ccc;
-            padding: 10px;
-            border-radius: 8px;
-            width: 150px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThingSpeak Data</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    canvas {
+      max-width: 800px;
+    }
+  </style>
 </head>
 <body>
-    <h1>Sensor Readings</h1>
+  <h1>ThingSpeak Data</h1>
+  <div id="dataContainer">
+    <table border="1">
+      <tr>
+        <th>Entry</th>
+        <th>Time</th>
+        <th>Temperature (°C)</th>
+        <th>Humidity (%)</th>
+        <th>Alcohol Level</th>
+      </tr>
+    </table>
+    <canvas id="temperatureChart" width="800" height="400"></canvas>
+    <canvas id="humidityChart" width="800" height="400"></canvas>
+    <canvas id="alcoholChart" width="800" height="400"></canvas>
+  </div>
 
-    <div id="sensorReadings">
-        <div id="temperature" class="sensor">
-            <h2>Temperature</h2>
-            <p id="temperatureValue">Loading...</p>
-        </div>
-        <div id="humidity" class="sensor">
-            <h2>Humidity</h2>
-            <p id="humidityValue">Loading...</p>
-        </div>
-        <div id="alcohol" class="sensor">
-            <h2>Alcohol</h2>
-            <p id="alcoholValue">Loading...</p>
-        </div>
-        <div id="methane" class="sensor">
-            <h2>Methane</h2>
-            <p id="methaneValue">Loading...</p>
-        </div>
-    </div>
+  <script>
+    // Function to fetch and display ThingSpeak data
+    function fetchAndDisplayData() {
+      // Replace 'YOUR_READ_API_KEY' with your actual ThingSpeak read API key
+      var apiKey = '52YLLSNC4X444TI2';
 
-    <script>
-        // Simulate sensor data (replace this with your actual data retrieval mechanism)
-        function getRandomValue() {
-            return (Math.random() * 100).toFixed(2);
+      // Fetch the last 10 entries from the channel feeds
+      fetch('https://api.thingspeak.com/channels/2395883/feeds.json?results=10&api_key=' + apiKey)
+        .then(response => response.json())
+        .then(data => {
+          // Display the data in a simple table
+          var table = '<table border="1"><tr><th>Entry</th><th>Time</th><th>Temperature (°C)</th><th>Humidity (%)</th><th>Alcohol Level</th></tr>';
+
+          data.feeds.forEach(feed => {
+            table += '<tr>';
+            table += '<td>' + feed.entry_id + '</td>';
+            table += '<td>' + feed.created_at + '</td>';
+            table += '<td>' + feed.field1 + '</td>';
+            table += '<td>' + feed.field2 + '</td>';
+            table += '<td>' + feed.field3 + '</td>';
+            table += '</tr>';
+          });
+
+          table += '</table>';
+
+          // Display the table in the 'dataContainer' div
+          document.getElementById('dataContainer').innerHTML = table;
+
+          // Display charts
+          displayChart('temperatureChart', 'Temperature (°C)', data.feeds.map(feed => parseFloat(feed.field1)));
+          displayChart('humidityChart', 'Humidity (%)', data.feeds.map(feed => parseFloat(feed.field2)));
+          displayChart('alcoholChart', 'Alcohol Level', data.feeds.map(feed => parseFloat(feed.field3)));
+        })
+        .catch(error => {
+          console.error('Error fetching data:', error);
+        });
+    }
+
+    // Function to display a line chart
+    function displayChart(canvasId, label, dataPoints) {
+      var ctx = document.getElementById(canvasId).getContext('2d');
+      var myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: Array.from({ length: dataPoints.length }, (_, i) => i + 1),
+          datasets: [{
+            label: label,
+            data: dataPoints,
+            borderColor: getRandomColor(),
+            borderWidth: 2,
+            fill: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              type: 'linear',
+              position: 'bottom'
+            }
+          }
         }
+      });
+    }
 
-        function updateSensorReadings() {
-            document.getElementById("temperatureValue").innerText = getRandomValue() + " °C";
-            document.getElementById("humidityValue").innerText = getRandomValue() + " %";
-            document.getElementById("alcoholValue").innerText = getRandomValue() + " ppm";
-            document.getElementById("methaneValue").innerText = getRandomValue() + " ppm";
-        }
+    // Function to generate a random color
+    function getRandomColor() {
+      var letters = '0123456789ABCDEF';
+      var color = '#';
+      for (var i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    }
 
-        // Update sensor readings every 2 seconds (adjust as needed)
-        setInterval(updateSensorReadings, 2000);
+    // Initial fetch and display
+    fetchAndDisplayData();
 
-        // Initial update
-        updateSensorReadings();
-    </script>
+    // Refresh the data every 15 seconds
+    setInterval(fetchAndDisplayData, 15000);
+  </script>
 </body>
 </html>
