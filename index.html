@@ -3,15 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
-    <title>IR Sensor Dashboard</title>
+    <title>Sensor Readings</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        #sensorReadings {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        .sensor {
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 8px;
+            width: 150px;
+        }
+    </style>
 </head>
 <body>
-    <div class="dashboard">
-        <div id="sensorValue">Waiting for data...</div>
-        <div id="statusCircle"></div>
+    <h1>Sensor Readings</h1>
+
+    <div id="sensorReadings">
+        <div id="temperature" class="sensor">
+            <h2>Temperature</h2>
+            <p id="temperatureValue">Loading...</p>
+        </div>
+        <div id="humidity" class="sensor">
+            <h2>Humidity</h2>
+            <p id="humidityValue">Loading...</p>
+        </div>
+        <div id="alcohol" class="sensor">
+            <h2>Alcohol</h2>
+            <p id="alcoholValue">Loading...</p>
+        </div>
+        <div id="methane" class="sensor">
+            <h2>Methane</h2>
+            <p id="methaneValue">Loading...</p>
+        </div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        // Simulate sensor data (replace this with your actual data retrieval mechanism)
+        function getRandomValue() {
+            return (Math.random() * 100).toFixed(2);
+        }
+
+        function updateSensorReadings() {
+            document.getElementById("temperatureValue").innerText = getRandomValue() + " °C";
+            document.getElementById("humidityValue").innerText = getRandomValue() + " %";
+            document.getElementById("alcoholValue").innerText = getRandomValue() + " ppm";
+            document.getElementById("methaneValue").innerText = getRandomValue() + " ppm";
+        }
+
+        // Update sensor readings every 2 seconds (adjust as needed)
+        setInterval(updateSensorReadings, 2000);
+
+        // Initial update
+        updateSensorReadings();
+    </script>
 </body>
 </html>
