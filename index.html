@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>ESP32 Sensor Data</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <script>
+    google.charts.load('current', { 'packages': ['gauge', 'corechart'] });
+    google.charts.setOnLoadCallback(drawCharts);
+
+    function drawCharts() {
+      // Fetch data from ThingSpeak
+      $.getJSON('https://api.thingspeak.com/channels/2395883/feeds.json?results=25', function (data) {
+        // Extract data for charts
+        var chartData = [['Time', 'Temperature']];
+        for (var i = 0; i < data.feeds.length; i++) {
+          var timestamp = new Date(data.feeds[i].created_at);
+          var time = timestamp.getHours() + ':' + timestamp.getMinutes();
+          var temperature = parseFloat(data.feeds[i].field1);
+          chartData.push([time, temperature]);
+        }
+
+        // Draw Bar Chart for Temperature
+        var temperatureChartData = google.visualization.arrayToDataTable(chartData);
+        var temperatureOptions = {
+          title: 'Temperature (Last 24 Hours)',
+          hAxis: { title: 'Time' },
+          vAxis: { title: 'Temperature (°C)', viewWindow: { min: -20, max: 80 } },
+          legend: 'none',
+        };
+        var temperatureChart = new google.visualization.ColumnChart(document.getElementById('temperature_chart'));
+        temperatureChart.draw(temperatureChartData, temperatureOptions);
+
+        // Draw Gauges for Current Data
+        drawGauges(data.feeds[0].field1, data.feeds[0].field2, data.feeds[0].field3);
+      });
+    }
+
+    function drawGauges(temperature, humidity, alcoholLevel) {
+      // Temperature Gauge
+      var temperatureData = google.visualization.arrayToDataTable([
+        ['Label', 'Value'],
+        ['Temperature', parseFloat(temperature)]
+      ]);
+      var temperatureOptions = {
+        width: 400, height: 120,
+        redFrom: 80, redTo: 100,
+        yellowFrom: 50, yellowTo: 80,
+        greenFrom: -20, greenTo: 50,
+        minorTicks: 5
+      };
+      var temperatureChart = new google.visualization.Gauge(document.getElementById('temperature_gauge'));
+      temperatureChart.draw(temperatureData, temperatureOptions);
+
+      // Humidity Gauge
+      var humidityData = google.visualization.arrayToDataTable([
+        ['Label', 'Value'],
+        ['Humidity', parseFloat(humidity)]
+      ]);
+      var humidityOptions = {
+        width: 400, height: 120,
+        redFrom: 80, redTo: 100,
+        yellowFrom: 50, yellowTo: 80,
+        greenFrom: 5, greenTo: 50,
+        minorTicks: 5
+      };
+      var humidityChart = new google.visualization.Gauge(document.getElementById('humidity_gauge'));
+      humidityChart.draw(humidityData, humidityOptions);
+
+      // Alcohol Level Gauge
+      var alcoholData = google.visualization.arrayToDataTable([
+        ['Label', 'Value'],
+        ['Alcohol Level', parseFloat(alcoholLevel)]
+      ]);
+      var alcoholOptions = {
+        width: 400, height: 120,
+        redFrom: 800, redTo: 1000,
+        yellowFrom: 600, yellowTo: 800,
+        minorTicks: 5
+      };
+      var alcoholChart = new google.visualization.Gauge(document.getElementById('alcohol_gauge'));
+      alcoholChart.draw(alcoholData, alcoholOptions);
+    }
+  </script>
+</head>
+
+<body>
+  <h1>ESP32 Sensor Data</h1>
+  <div id="temperature_gauge"></div>
+  <div id="humidity_gauge"></div>
+  <div id="alcohol_gauge"></div>
+  <div id="temperature_chart"></div>
+</body>
+
+</html>
