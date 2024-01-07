@@ -3,53 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sensor Data Viewer</title>
-  <!-- Include Firebase SDK -->
+  <title>Read Firebase Data</title>
+</head>
+<body>
+
+  <h1>Firebase Database Read Example</h1>
+
+  <div id="sensorData"></div>
+
   <script type="module">
+    // Import the functions you need from the Firebase SDK
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     // Your web app's Firebase configuration
     const firebaseConfig = {
-    apiKey: "AIzaSyBuzCLF5M0H3_k6TNKTQsjq8rld8KehnLg",
-    authDomain: "foodspoilage-9b415.firebaseapp.com",
-    databaseURL: "https://foodspoilage-9b415-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "foodspoilage-9b415",
-    storageBucket: "foodspoilage-9b415.appspot.com",
-    messagingSenderId: "41127147798",
-    appId: "1:41127147798:web:06e3721daa12b2737f7837"
-  };
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      databaseURL: "https://foodspoilage-9b415-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
 
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
-  </script>
-</head>
-<body>
-  <h1>Sensor Data Viewer</h1>
-  <div id="sensorData"></div>
 
-  <!-- Include your JavaScript code here -->
-  <script type="module">
-    import { onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-    // Reference to the sensor data in the Realtime Database
+    // Reference to the "sensordata" node in the database
     const sensorDataRef = ref(database, 'sensordata');
 
-    // Select the HTML element where the sensor data will be displayed
-    const sensorDataElement = document.getElementById('sensorData');
+    // DOM element to display the sensor data
+    const sensorDataDiv = document.getElementById('sensorData');
 
-    // Listen for changes in the sensor data
+    // Listen for changes in the database
     onValue(sensorDataRef, (snapshot) => {
       const sensorData = snapshot.val();
-      // Update the HTML element with the latest sensor data
-      sensorDataElement.innerHTML = `<p>MQ-4 Digital Value: ${sensorData.MQ4Digital}</p>
-                                     <p>MQ-3 Digital Value: ${sensorData.MQ3Digital}</p>
-                                     <p>MQ-4 Analog Value: ${sensorData.MQ4Analog}</p>
-                                     <p>MQ-3 Analog Value: ${sensorData.MQ3Analog}</p>
-                                     <p>Temperature: ${sensorData.Temperature} °C</p>
-                                     <p>Humidity: ${sensorData.Humidity} %</p>`;
+
+      // Clear previous values
+      sensorDataDiv.innerHTML = '';
+
+      // Display sensor data
+      Object.keys(sensorData).forEach(sensor => {
+        const sensorValueDiv = document.createElement('div');
+        sensorValueDiv.innerHTML = `<b>${sensor}:</b> ${sensorData[sensor]}`;
+        sensorDataDiv.appendChild(sensorValueDiv);
+      });
     });
   </script>
+
 </body>
 </html>
