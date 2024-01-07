@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Read Firebase Data with Bar Charts</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 20px;
+        }
+
+        h1 {
+            color: #007BFF;
+            text-align: center;
+            border-bottom: 2px solid #007BFF;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        .dashboard-section {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        .sensorValue {
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .chart-container,
+        .status-container {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        canvas,
+        .status-circle-container {
+            max-width: 400px;
+            margin: 20px;
+        }
+
+        .status-circle-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .status-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 10px;
+        }
+
+        .status-circle.mq3 {
+            background-color: red;
+        }
+
+        .status-circle.mq4 {
+            background-color: red;
+        }
+
+        .status-circle.green {
+            background-color: green;
+        }
+
+        .circle-title {
+            text-align: center;
+            font-size: 18px;
+            margin-top: 10px;
+        }
+
+        .spoilage-message {
+            text-align: center;
+            font-size: 24px;
+            color: red;
+            margin-top: 30px;
+        }
+
+        b {
+            color: #28a745;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>FOOD SPOILAGE DETECTION</h1>
+    <h2>DASHBOARD</h2>
+
+    <div class="dashboard-section">
+        <div id="mq3Data" class="sensorValue mq3Analog"></div>
+        <div id="mq4Data" class="sensorValue mq4Analog"></div>
+        <div id="tempData" class="sensorValue"></div>
+        <div id="humidityData" class="sensorValue"></div>
+    </div>
+
+    <div class="chart-container">
+        <div class="mq3Analog">
+            <canvas id="mq3AnalogChart"></canvas>
+        </div>
+
+        <div class="mq4Analog">
+            <canvas id="mq4AnalogChart"></canvas>
+        </div>
+
+        <div class="tempChart">
+            <canvas id="tempChart"></canvas>
+        </div>
+
+        <div class="humidityChart">
+            <canvas id="humidityChart"></canvas>
+        </div>
+    </div>
+
+    <div class="status-container">
+        <div class="status-circle-container">
+            <div class="circle-title">Ethanol Detected</div>
+            <div class="status-circle mq3"></div>
+        </div>
+        <div class="status-circle-container">
+            <div class="circle-title">Methane/CO2 Detected</div>
+            <div class="status-circle mq4"></div>
+        </div>
+    </div>
+
+    <div class="spoilage-message" id="spoilageMessage"></div>
+
+    <script type="module">
+        // Import the functions you need from the Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBuzCLF5M0H3_k6TNKTQsjq8rld8KehnLg",
+            authDomain: "foodspoilage-9b415.firebaseapp.com",
+            databaseURL: "https://foodspoilage-9b415-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "foodspoilage-9b415",
+            storageBucket: "foodspoilage-9b415.appspot.com",
+            messagingSenderId: "41127147798",
+            appId: "1:41127147798:web:5cdf88ac0df43b517f7837"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Reference to the "sensordata" node in the database
+        const sensorDataRef = ref(database, 'sensordata');
+
+        // DOM elements to display sensor data
+        const mq3DataDiv = document.getElementById('mq3Data');
+        const mq4DataDiv = document.getElementById('mq4Data');
+        const tempDataDiv = document.getElementById('tempData');
+        const humidityDataDiv = document.getElementById('humidityData');
+
+        // Chart instances
+        let mq3AnalogChart;
+        let mq4AnalogChart;
+        let tempChart;
+        let humidityChart;
+
+        // Status circle elements
+        const mq3StatusCircle = document.querySelector('.status-circle.mq3');
+        const mq4StatusCircle = document.querySelector('.status-circle.mq4');
+
+        // Spoilage message element
+        const spoilageMessageDiv = document.getElementById('spoilageMessage');
+
+        // Listen for changes in the database
+        onValue(sensorDataRef, (snapshot) => {
+            const sensorData = snapshot.val();
+
+            // Display sensor data for MQ3
+            mq3DataDiv.innerHTML = `<b>MQ3 Analog:</b> ${sensorData.MQ3Analog} ppm<br><b>MQ3 Digital:</b> ${sensorData.MQ3Digital}`;
+
+            // Display sensor data for MQ4
+            mq4DataDiv.innerHTML = `<b>MQ4 Analog:</b> ${sensorData.MQ4Analog} ppm<br><b>MQ4 Digital:</b> ${sensorData.MQ4Digital}`;
+
+            // Display sensor data for Temperature
+            tempDataDiv.innerHTML = `<b>Temperature:</b> ${sensorData.Temperature} &deg;C`;
+
+            // Display sensor data for Humidity
+            humidityDataDiv.innerHTML = `<b>Humidity:</b> ${sensorData.Humidity} %`;
+
+            // Update or create the bar chart for MQ3 Analog values
+            if (mq3AnalogChart) {
+                updateBarChart(mq3AnalogChart, 'MQ3 Analog (ppm)', sensorData.MQ3Analog);
+            } else {
+                mq3AnalogChart = createBarChart('mq3AnalogChart', 'MQ3 Analog (ppm)', sensorData.MQ3Analog);
+            }
+
+            // Update or create the bar chart for MQ4 Analog values
+            if (mq4AnalogChart) {
+                updateBarChart(mq4AnalogChart, 'MQ4 Analog (ppm)', sensorData.MQ4Analog);
+            } else {
+                mq4AnalogChart = createBarChart('mq4AnalogChart', 'MQ4 Analog (ppm)', sensorData.MQ4Analog);
+            }
+
+            // Update or create the bar chart for Temperature
+            if (tempChart) {
+                updateBarChart(tempChart, 'Temperature (&deg;C)', sensorData.Temperature);
+            } else {
+                tempChart = createBarChart('tempChart', 'Temperature (&deg;C)', sensorData.Temperature);
+            }
+
+            // Update or create the bar chart for Humidity
+            if (humidityChart) {
+                updateBarChart(humidityChart, 'Humidity (%)', sensorData.Humidity);
+            } else {
+                humidityChart = createBarChart('humidityChart', 'Humidity (%)', sensorData.Humidity);
+            }
+
+            // Update the status circle for MQ3 Digital
+            updateStatusCircle(mq3StatusCircle, sensorData.MQ3Digital);
+
+            // Update the status circle for MQ4 Digital
+            updateStatusCircle(mq4StatusCircle, sensorData.MQ4Digital);
+
+            // Display spoilage message if MQ3 or MQ4 Digital is 1
+            if (sensorData.MQ3Digital === 1 || sensorData.MQ4Digital === 1) {
+                spoilageMessageDiv.textContent = 'SPOILAGE DETECTED';
+            } else {
+                spoilageMessageDiv.textContent = '';
+            }
+        });
+
+        function createBarChart(chartId, label, data) {
+            const ctx = document.getElementById(chartId).getContext('2d');
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [label],
+                    datasets: [{
+                        data: [data],
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.5)',
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                        ],
+                        borderWidth: 1,
+                    }],
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: label.includes('Analog') ? 4095 : (label.includes('Humidity') ? 100 : 50),
+                        },
+                    },
+                },
+            });
+        }
+
+        function updateBarChart(chart, label, data) {
+            chart.data.labels = [label];
+            chart.data.datasets[0].data = [data];
+            chart.options.scales.y.max = label.includes('Analog') ? 4095 : (label.includes('Humidity') ? 100 : 50);
+            chart.update();
+        }
+
+        function updateStatusCircle(circle, value) {
+            if (value === 1) {
+                circle.classList.remove('red');
+                circle.classList.add('green');
+            } else {
+                circle.classList.remove('green');
+                circle.classList.add('red');
+            }
+        }
+    </script>
+
+</body>
+
+</html>
